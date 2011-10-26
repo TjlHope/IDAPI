@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 # Coursework in Python
 
+from __future__ import division
+
 #from numpy import *
 import numpy as np
 
@@ -14,59 +16,68 @@ import IDAPICourseworkLibrary as IDAPI
 #
 
 
-def Prior(data, root, num_states):
+def Prior(data, root, states):
     """Function to compute the prior distribution of the variable root from the
     data set."""
-    prior = np.zeros((num_states[root]), float)
+    prior = np.zeros((states[root]), float)
     # Coursework 1 task 1 should be inserted here...
-    root_data = data[:, root]		# Get the column for 'root'
-    for val in root_data:		# root column
-	prior[val] += 1
-    prior /= len(root_data)
+    inc = 1 / len(data)
+    for row in data:
+	prior[row[root]] += inc
     # end of Coursework 1 task 1.
     return prior
 
 
-def CPT(theData, varC, varP, noStates):
-    """Function to compute a CPT with parent node varP and xchild node varC
+def CPT(data, child, parent, states):
+    """Function to compute a CPT with parent node and child node varC
     from the data array it is assumed that the states are designated by
     consecutive integers starting with 0.
     """
-    cPT = np.zeros((noStates[varC], noStates[varP]), float)
-    # Coursework 1 task 2 should be inserte4d here...
-
+    cpt = np.zeros((states[child], states[parent]), float)
+    # Coursework 1 task 2 should be inserted here...
+    # cpt/ link matrix: P(C|P) = [[P(c0|p0), P(c0|p1), ..., P(c0|pn)],
+    #                             [P(c1|p0), P(c1|p1), ..., P(c1|pn)],
+    #                             ...,
+    #                             [P(cn|p0), P(cn|p1), ..., P(cn|pn)]]
+    for r in data:
+        cpt[r[child], r[parent]] += 1
+    for c in cpt.T:
+        c /= sum(c)
     # end of coursework 1 task 2.
-    return cPT
+    return cpt
 
 
-def JPT(theData, varRow, varCol, noStates):
+def JPT(data, row, col, states):
     """Function to calculate the joint probability table of two variables in
     the data set.
     """
-    jPT = np.zeros((noStates[varRow], noStates[varCol]), float)
+    jpt = np.zeros((states[row], states[col]), float)
     # Coursework 1 task 3 should be inserted here...
-
+    inc = 1 / len(data)
+    for r in data:
+        jpt[r[row], r[col]] += inc
     # end of coursework 1 task 3.
-    return jPT
+    return jpt
 
 
-def JPT2CPT(aJPT):
+def JPT2CPT(jpt):
     """Function to convert a joint probability table to a conditional
-    probability table.
+    probability table. Note: modifies array in place.
     """
     # Coursework 1 task 4 should be inserted here...
+    for c in jpt.T:
+        c /= sum(c)
+    # end of coursework 1 task 4.
+    return jpt
 
-    # end of coursework 1 taks 4.
-    return aJPT
 
-
-def Query(theQuery, naiveBayes):
+def Query(query, network):
     """Function to query a naive Bayesian network."""
-    rootPdf = np.zeros((naiveBayes[0].shape[0]), float)
+    root_pdf = np.zeros((network[0].shape[0]), float)
     # Coursework 1 task 5 should be inserted here...
 
     # end of coursework 1 task 5.
-    return rootPdf
+    return root_pdf
 
 
 #
@@ -249,16 +260,39 @@ def PrincipalComponents(theData):
 
 def names(fl):
     IDAPI.AppendString(fl, "\ttjh08\tThomas Hope")
-    IDAPI.AppendString(fl, "")       # blank line
 
 
 def cw1(fl):
     noVars, noRoots, noStates, noPoints, data = IDAPI.ReadFile("Neurones.txt")
     IDAPI.AppendString(fl, "Coursework One Results by:")
     names(fl)
-    IDAPI.AppendString(fl, "The prior probability of node 0")
+    # Task 1
+    IDAPI.AppendString(fl, "\nThe prior probability of node 0")
     prior = Prior(np.array(data), 0, noStates)
     IDAPI.AppendList(fl, prior)
+    IDAPI.AppendString(fl, "The prior probability of node 1")
+    prior = Prior(np.array(data), 1, noStates)
+    IDAPI.AppendList(fl, prior)
+    # Task 2
+    IDAPI.AppendString(fl, "\nThe conditional probablity table P(1|0).")
+    cpt = CPT(data, 1, 0, noStates)
+    IDAPI.AppendArray(fl, cpt)
+    IDAPI.AppendString(fl, "The conditional probablity table P(2|0).")
+    cpt = CPT(data, 2, 0, noStates)
+    IDAPI.AppendArray(fl, cpt)
+    # Task 3
+    IDAPI.AppendString(fl, "\nThe joint probablity table P(1&0).")
+    jpt = JPT(data, 1, 0, noStates)
+    IDAPI.AppendArray(fl, jpt)
+    IDAPI.AppendString(fl, "The joint probablity table P(2&0).")
+    jpt = JPT(data, 2, 0, noStates)
+    IDAPI.AppendArray(fl, jpt)
+    # Task 4
+    IDAPI.AppendString(fl, "The cpt P(2|0) from the jpt P(2&0).")
+    cpt = JPT2CPT(jpt)
+    IDAPI.AppendArray(fl, cpt)
+    # Task 5
+
     #
     # continue as described
     #
