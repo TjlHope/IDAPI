@@ -4,6 +4,8 @@
 
 from __future__ import division
 
+import os
+
 #from numpy import *
 import numpy as np
 
@@ -21,9 +23,9 @@ def Prior(data, root, states):
     data set."""
     prior = np.zeros((states[root]), float)
     # Coursework 1 task 1 should be inserted here...
-    inc = 1 / len(data)
+    inc = 1 / data.shape[0]     # increment by proportion as sums to 1
     for row in data:
-	prior[row[root]] += inc
+        prior[row[root]] += inc
     # end of Coursework 1 task 1.
     return prior
 
@@ -40,9 +42,9 @@ def CPT(data, child, parent, states):
     #                             ...,
     #                             [P(cn|p0), P(cn|p1), ..., P(cn|pn)]]
     for r in data:
-        cpt[r[child], r[parent]] += 1
+        cpt[r[child], r[parent]] += 1   # Increment necessary points
     for c in cpt.T:
-        c /= sum(c)
+        c /= sum(c)                     # normalise
     # end of coursework 1 task 2.
     return cpt
 
@@ -53,7 +55,7 @@ def JPT(data, row, col, states):
     """
     jpt = np.zeros((states[row], states[col]), float)
     # Coursework 1 task 3 should be inserted here...
-    inc = 1 / len(data)
+    inc = 1 / data.shape[0]     # all sums to 1, so increment by proportion
     for r in data:
         jpt[r[row], r[col]] += inc
     # end of coursework 1 task 3.
@@ -66,18 +68,79 @@ def JPT2CPT(jpt):
     """
     # Coursework 1 task 4 should be inserted here...
     for c in jpt.T:
-        c /= sum(c)
+        c /= sum(c)     # normalise the columns
     # end of coursework 1 task 4.
     return jpt
 
 
 def Query(query, network):
     """Function to query a naive Bayesian network."""
-    root_pdf = np.zeros((network[0].shape[0]), float)
+    root_pdf = np.zeros(network[0].shape[0], float)
     # Coursework 1 task 5 should be inserted here...
-
+    for i, p in enumerate(network[0]):
+        root_pdf[i] = p         # as P(P|C0&...&Cn) = alpha P(D)P(C0|D)...
+        for j, cpt in enumerate(network[1:]):
+            root_pdf[i] *= cpt[query[j], i]     # The 'P(Ci|D)'s
+    # normalise for alpha
+    root_pdf /= sum(root_pdf)
     # end of coursework 1 task 5.
     return root_pdf
+
+
+def cw1():
+    """main() part of Coursework 01."""
+    fl = "IDAPIResults01.txt"
+    if os.path.exists(fl):
+        os.remove(fl)
+    
+    (variables, roots, states,
+        points, datain) = IDAPI.ReadFile("Neurones.txt")
+    data = np.array(datain)
+    IDAPI.AppendString(fl, "Coursework One Results by:")
+    IDAPI.AppendString(fl, "\ttjh08\tThomas Hope")
+    IDAPI.AppendString(fl, "")
+
+    # Task 1
+    for root in [0]:
+        IDAPI.AppendString(fl,
+                           "The prior probability of node {0}".format(root))
+        prior = Prior(data, root, states)
+        IDAPI.AppendList(fl, prior)
+    IDAPI.AppendString(fl, "")
+
+    for child in [2]:
+        # Task 2
+        IDAPI.AppendString(fl,
+                           "The conditional probability table P({0}|0)."
+                               .format(child))
+        cpt = CPT(data, child, 0, states)
+        IDAPI.AppendArray(fl, cpt)
+
+        # Task 3
+        IDAPI.AppendString(fl,
+                           "The joint probability table P({0}&0)."
+                               .format(child))
+        jpt = JPT(data, child, 0, states)
+        IDAPI.AppendArray(fl, jpt)
+
+        # Task 4
+        IDAPI.AppendString(fl,
+                           "The cpt P({0}|0) from the jpt P({0}&0)."
+                               .format(child))
+        cpt = JPT2CPT(jpt)
+        IDAPI.AppendArray(fl, cpt)
+
+        IDAPI.AppendString(fl, "")
+
+    # Task 5
+    network = ([Prior(data, 0, states)] +
+               [CPT(data, i, 0, states) for i in range(1, variables)])
+    for query in [[4, 0, 0, 0, 5], [6, 5, 2, 5, 5]]:
+        IDAPI.AppendString(fl, "The pdf from the query {0}.".format(query))
+        pdf = Query(query, network)
+        IDAPI.AppendList(fl, pdf)
+
+    IDAPI.AppendString(fl, "\nEND")
 
 
 #
@@ -258,49 +321,5 @@ def PrincipalComponents(theData):
 #
 
 
-def names(fl):
-    IDAPI.AppendString(fl, "\ttjh08\tThomas Hope")
-
-
-def cw1(fl):
-    noVars, noRoots, noStates, noPoints, data = IDAPI.ReadFile("Neurones.txt")
-    IDAPI.AppendString(fl, "Coursework One Results by:")
-    names(fl)
-    # Task 1
-    IDAPI.AppendString(fl, "\nThe prior probability of node 0")
-    prior = Prior(np.array(data), 0, noStates)
-    IDAPI.AppendList(fl, prior)
-    IDAPI.AppendString(fl, "The prior probability of node 1")
-    prior = Prior(np.array(data), 1, noStates)
-    IDAPI.AppendList(fl, prior)
-    # Task 2
-    IDAPI.AppendString(fl, "\nThe conditional probablity table P(1|0).")
-    cpt = CPT(data, 1, 0, noStates)
-    IDAPI.AppendArray(fl, cpt)
-    IDAPI.AppendString(fl, "The conditional probablity table P(2|0).")
-    cpt = CPT(data, 2, 0, noStates)
-    IDAPI.AppendArray(fl, cpt)
-    # Task 3
-    IDAPI.AppendString(fl, "\nThe joint probablity table P(1&0).")
-    jpt = JPT(data, 1, 0, noStates)
-    IDAPI.AppendArray(fl, jpt)
-    IDAPI.AppendString(fl, "The joint probablity table P(2&0).")
-    jpt = JPT(data, 2, 0, noStates)
-    IDAPI.AppendArray(fl, jpt)
-    # Task 4
-    IDAPI.AppendString(fl, "The cpt P(2|0) from the jpt P(2&0).")
-    cpt = JPT2CPT(jpt)
-    IDAPI.AppendArray(fl, cpt)
-    # Task 5
-
-    #
-    # continue as described
-    #
-    #
-
-
 if __name__ == '__main__':
-    fl = "results.txt"
-    import os
-    os.remove(fl)
-    cw1(fl)
+    cw1()
