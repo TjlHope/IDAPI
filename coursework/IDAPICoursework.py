@@ -44,7 +44,10 @@ def CPT(data, child, parent, states):
     for r in data:
         cpt[r[child], r[parent]] += 1   # Increment necessary points
     for c in cpt.T:
-        c /= sum(c)                     # normalise
+        try:
+            c /= sum(c)         # normalise the columns
+        except ZeroDivisionError:
+            continue            # whole column is zero - leave it that way
     # end of coursework 1 task 2.
     return cpt
 
@@ -68,7 +71,10 @@ def JPT2CPT(jpt):
     """
     # Coursework 1 task 4 should be inserted here...
     for c in jpt.T:
-        c /= sum(c)     # normalise the columns
+        try:
+            c /= sum(c)         # normalise the columns
+        except ZeroDivisionError:
+            continue            # whole column is zero - leave it that way
     # end of coursework 1 task 4.
     return jpt
 
@@ -150,7 +156,7 @@ def cw1():
 #
 
 
-def MutualInformation(jP):
+def MutualInformation(jpt):
     """Calculate the mutual information from the joint probability table of two
     variables.
     """
@@ -161,13 +167,13 @@ def MutualInformation(jP):
     return mi
 
 
-def DependencyMatrix(theData, noVariables):
+def DependencyMatrix(data, variables, states):
     """Constructs a dependency matrix for all the variables."""
-    MIMatrix = np.zeros((noVariables, noVariables))
+    mi_matrix = np.zeros((variables, variables))
     # Coursework 2 task 2 should be inserted here...
 
     # end of coursework 2 task 2.
-    return MIMatrix
+    return mi_matrix
 
 
 def DependencyList(depMatrix):
