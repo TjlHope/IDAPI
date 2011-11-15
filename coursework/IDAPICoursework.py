@@ -5,6 +5,7 @@
 from __future__ import division
 
 import os
+import math
 
 #from numpy import *
 import numpy as np
@@ -162,7 +163,23 @@ def MutualInformation(jpt):
     """
     mi = 0.0
     # Coursework 2 task 1 should be inserted here...
-
+    # Dep(A, B) = Sum(P(ai&bj) * log2(P(ai&bj) / (P(ai) * P(bj))))
+    # Initiate list for independent column probablities.
+    column_totals = []
+    for i, row in enumerate(jpt):
+        # Get independent probablity for rows (marginalise)
+        row_total = sum(row)
+        for j, cell in enumerate(row):
+            # Get independent probablilty for columns (marginalise)
+            if i == 0:
+                column_totals.append(sum(jpt[:, j]))
+            # Calculate Mutual Information
+            try:
+                # if either P(ai), P(bj) or P(ai&bj) is 0...
+                mi += cell * math.log((cell / (row_total * column_totals[j])), 2)
+            except (ZeroDivisionError, ValueError):
+                # ... this should increment by zero (i.e. don't increment)
+                continue
     # end of coursework 2 task 1.
     return mi
 
@@ -171,18 +188,21 @@ def DependencyMatrix(data, variables, states):
     """Constructs a dependency matrix for all the variables."""
     mi_matrix = np.zeros((variables, variables))
     # Coursework 2 task 2 should be inserted here...
-
+    for i in range(variables):
+        for j in range(variables):
+            jpt = JPT(data, i, j, states)
+            mi_matrix[i, j] = MutualInformation(jpt)
     # end of coursework 2 task 2.
     return mi_matrix
 
 
-def DependencyList(depMatrix):
+def DependencyList(dep_matrix):
     """Function to compute an ordered list of dependencies."""
-    depList = []
+    dep_list = []
     # Coursework 2 task 3 should be inserted here...
 
     # end of coursework 2 task 3.
-    return np.array(depList2)
+    return np.array(dep_list)
 
 
 # Coursework 2 task 4
@@ -193,6 +213,29 @@ def SpanningTreeAlgorithm(depList, noVariables):
 
     return np.array(spanningTree)
 
+
+def cw2():
+    """main() part of Coursework 02."""
+    fl = "Results02.txt"
+    if os.path.exists(fl):
+        os.remove(fl)
+    
+    (variables, roots, states,
+        points, datain) = IDAPI.ReadFile("HepatitisC.txt")
+    data = np.array(datain)
+    IDAPI.AppendString(fl, "Coursework Two Results by:")
+    IDAPI.AppendString(fl, "\ttjh08\tThomas Hope")
+    IDAPI.AppendString(fl, "\tjzy08\tJason Ye")
+    IDAPI.AppendString(fl, "")
+
+    # Task 1
+    print data
+    print variables
+    print states
+    print "------------"
+    print MutualInformation(np.array([[0.25,0.25],[0.25,0.25]]))
+    print MutualInformation(np.array([[0.5,0.0],[0.0,0.5]]))
+    print DependencyMatrix(data, variables, states)
 
 #
 # End of coursework 2
@@ -328,4 +371,4 @@ def PrincipalComponents(theData):
 
 
 if __name__ == '__main__':
-    cw1()
+    cw2()
