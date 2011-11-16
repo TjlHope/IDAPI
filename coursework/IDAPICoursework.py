@@ -5,7 +5,7 @@
 from __future__ import division
 
 import os
-import math
+from operator import itemgetter
 
 #from numpy import *
 import numpy as np
@@ -13,6 +13,9 @@ import numpy as np
 #from IDAPICourseworkLibrary import *
 import IDAPICourseworkLibrary as IDAPI
 
+
+# Raise all errors from numpy functions.
+old_settings = np.seterr(all='raise')
 
 #
 # Coursework 1 begins here
@@ -47,7 +50,7 @@ def CPT(data, child, parent, states):
     for c in cpt.T:
         try:
             c /= sum(c)         # normalise the columns
-        except ZeroDivisionError:
+        except (ZeroDivisionError, FloatingPointError):
             continue            # whole column is zero - leave it that way
     # end of coursework 1 task 2.
     return cpt
@@ -74,7 +77,7 @@ def JPT2CPT(jpt):
     for c in jpt.T:
         try:
             c /= sum(c)         # normalise the columns
-        except ZeroDivisionError:
+        except (ZeroDivisionError, FloatingPointError):
             continue            # whole column is zero - leave it that way
     # end of coursework 1 task 4.
     return jpt
@@ -164,8 +167,7 @@ def MutualInformation(jpt):
     mi = 0.0
     # Coursework 2 task 1 should be inserted here...
     # Dep(A, B) = Sum(P(ai&bj) * log2(P(ai&bj) / (P(ai) * P(bj))))
-    # Initiate list for independent column probablities.
-    column_totals = []
+    column_totals = []  # Initiate list for independent column probablities.
     for i, row in enumerate(jpt):
         # Get independent probablity for rows (marginalise)
         row_total = sum(row)
@@ -176,9 +178,9 @@ def MutualInformation(jpt):
             # Calculate Mutual Information
             try:
                 # if either P(ai), P(bj) or P(ai&bj) is 0...
-                mi += cell * math.log((cell / (row_total * column_totals[j])), 2)
-            except (ZeroDivisionError, ValueError):
-                # ... this should increment by zero (i.e. don't increment)
+                mi += cell * np.log2(cell / (row_total * column_totals[j]))
+            # ... this should increment by zero (i.e. don't increment)
+            except (ZeroDivisionError, ValueError, FloatingPointError):
                 continue
     # end of coursework 2 task 1.
     return mi
@@ -189,9 +191,9 @@ def DependencyMatrix(data, variables, states):
     mi_matrix = np.zeros((variables, variables))
     # Coursework 2 task 2 should be inserted here...
     for i in range(variables):
-        for j in range(variables):
+        for j in range(i, variables):
             jpt = JPT(data, i, j, states)
-            mi_matrix[i, j] = MutualInformation(jpt)
+            mi_matrix[i, j] = mi_matrix[j, i] = MutualInformation(jpt)
     # end of coursework 2 task 2.
     return mi_matrix
 
@@ -200,42 +202,81 @@ def DependencyList(dep_matrix):
     """Function to compute an ordered list of dependencies."""
     dep_list = []
     # Coursework 2 task 3 should be inserted here...
-
+    for i in range(len(dep_matrix)):
+        for j in range(i, len(dep_matrix[i])):
+            dep_list.append((dep_matrix[i, j], i, j))
+    dep_list.sort(reverse=True, key=itemgetter(0))
     # end of coursework 2 task 3.
     return np.array(dep_list)
 
 
 # Coursework 2 task 4
+def connected(tree, src, dst, path=[]):
+    for item in tree:
+        if item[1] in path and item[2] in path:
+            return True
+        elif item[1] == src and item[2] not in path:
+            if connected(tree, item[2], dst, path + [item[1]]):
+                return True
+        elif item[2] == src and item[1] not in path:
+            if connected(tree, item[1], dst, path + [item[2]]):
+                return True
 
-def SpanningTreeAlgorithm(depList, noVariables):
-    """Functions implementing the spanning tree algorithm."""
-    spanningTree = []
 
-    return np.array(spanningTree)
+def SpanningTreeAlgorithm(dep_list, variables):
+    """Function implementing the spanning tree algorithm."""
+    spanning_tree = []
+    for item in dep_list:
+        if item[1] != item[2] and not(connected(spanning_tree, item[1], item[2])):
+            spanning_tree.append(item)
+    return np.array(spanning_tree)
+# End of Coursework 2 task 4
+
+
+def dot(l, name="network.dot"):
+    """Output dot file of list with items (weight, node0, node1)."""
+    with open(name, 'w') as f:
+        f.write("graph {0}{{".format(name.rsplit('.dot')[0]))
+        for i in l:
+            if i[0]:
+                f.write("    {1} -- {2} [label={0}]".format(*i))
+        f.write("}")
 
 
 def cw2():
     """main() part of Coursework 02."""
-    fl = "Results02.txt"
+    fl = "Results02.rst"
     if os.path.exists(fl):
         os.remove(fl)
     
     (variables, roots, states,
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
-    IDAPI.AppendString(fl, "Coursework Two Results by:")
-    IDAPI.AppendString(fl, "\ttjh08\tThomas Hope")
-    IDAPI.AppendString(fl, "\tjzy08\tJason Ye")
+    IDAPI.AppendString(fl, "Coursework Two Results by:\n")
+    IDAPI.AppendString(fl, "*\ttjh08\tThomas Hope")
+    IDAPI.AppendString(fl, "*\tjzy08\tJason Ye")
     IDAPI.AppendString(fl, "")
 
-    # Task 1
-    print data
-    print variables
-    print states
-    print "------------"
-    print MutualInformation(np.array([[0.25,0.25],[0.25,0.25]]))
-    print MutualInformation(np.array([[0.5,0.0],[0.0,0.5]]))
-    print DependencyMatrix(data, variables, states)
+    dep_matrix = DependencyMatrix(data, variables, states)
+    IDAPI.AppendString(fl, "The dependency matrix of the HepatitisC data.\n")
+    IDAPI.AppendArray(fl, dep_matrix)
+
+    dep_list = DependencyList(dep_matrix)
+    IDAPI.AppendString(fl, "The dependency list of the HepatitisC data.\n")
+    IDAPI.AppendArray(fl, dep_list)
+
+    spanning_tree = SpanningTreeAlgorithm(dep_list, variables)
+    IDAPI.AppendString(fl, "The Spanning Tree of the HepatitisC data.\n")
+    IDAPI.AppendArray(fl, spanning_tree)
+    dot(spanning_tree, 'span.dot')
+    os.system("circo span.dot -Tpng > span.png")
+
+    IDAPI.AppendString(fl, ".. image:: span.png")
+    IDAPI.AppendString(fl, "   :scale: 50%")
+    
+    os.system("rst2latex.py {0} IDAPIResults02.tex".format(fl))
+    os.system("pdflatex IDAPIResults02.tex")
+
 
 #
 # End of coursework 2
