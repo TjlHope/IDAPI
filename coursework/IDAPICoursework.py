@@ -212,8 +212,11 @@ def DependencyList(dep_matrix):
 
 # Coursework 2 task 4
 def connected(tree, src, dst, path=[]):
+    print path
     for item in tree:
-        if item[1] in path and item[2] in path:
+        #if item[0] in path and item[2] in path:
+        if ((item[1] == src and item[2] == dst) or
+            (item[2] == src and item[1] == dst)):
             return True
         elif item[1] == src and item[2] not in path:
             if connected(tree, item[2], dst, path + [item[1]]):
@@ -239,7 +242,7 @@ def dot(l, name="network.dot"):
         f.write("graph {0}{{".format(name.rsplit('.dot')[0]))
         for i in l:
             if i[0]:
-                f.write("    {1} -- {2} [label={0}]".format(*i))
+                f.write("    {1} -- {2} [label={0:.5f}]".format(*i))
         f.write("}")
 
 
@@ -253,26 +256,28 @@ def cw2():
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
     IDAPI.AppendString(fl, "Coursework Two Results by:\n")
-    IDAPI.AppendString(fl, "*\ttjh08\tThomas Hope")
-    IDAPI.AppendString(fl, "*\tjzy08\tJason Ye")
+    IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
+    IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
 
     dep_matrix = DependencyMatrix(data, variables, states)
-    IDAPI.AppendString(fl, "The dependency matrix of the HepatitisC data.\n")
+    IDAPI.AppendString(fl, "The dependency matrix of the HepatitisC data.")
+    IDAPI.AppendString(fl, "\n::\n")
     IDAPI.AppendArray(fl, dep_matrix)
 
     dep_list = DependencyList(dep_matrix)
-    IDAPI.AppendString(fl, "The dependency list of the HepatitisC data.\n")
+    IDAPI.AppendString(fl, "The dependency list of the HepatitisC data.")
+    IDAPI.AppendString(fl, "\n::\n")
     IDAPI.AppendArray(fl, dep_list)
 
     spanning_tree = SpanningTreeAlgorithm(dep_list, variables)
-    IDAPI.AppendString(fl, "The Spanning Tree of the HepatitisC data.\n")
+    IDAPI.AppendString(fl, "The Spanning Tree of the HepatitisC data.")
+    IDAPI.AppendString(fl, "\n::\n")
     IDAPI.AppendArray(fl, spanning_tree)
     dot(spanning_tree, 'span.dot')
-    os.system("circo span.dot -Tpng > span.png")
+    os.system("neato span.dot -Tpng > span.png")
 
-    IDAPI.AppendString(fl, ".. image:: span.png")
-    IDAPI.AppendString(fl, "   :scale: 50%")
+    IDAPI.AppendString(fl, ".. image:: span.png\n   :scale: 50%\n")
     
     os.system("rst2latex.py {0} IDAPIResults02.tex".format(fl))
     os.system("pdflatex IDAPIResults02.tex")

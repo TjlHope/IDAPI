@@ -1,9 +1,11 @@
 Coursework Two Results by:
 
-*	tjh08	Thomas Hope
-*	jzy08	Jason Ye
+* tjh08 - Thomas Hope
+* jzy08 - Jason Ye
 
 The dependency matrix of the HepatitisC data.
+
+::
 
  1.530  0.045  0.026  0.048  0.034  0.024  0.039  0.086  0.016 
  0.045  2.372  0.009  0.060  0.069  0.030  0.071  0.083  0.003 
@@ -17,6 +19,8 @@ The dependency matrix of the HepatitisC data.
 
 
 The dependency list of the HepatitisC data.
+
+::
 
  2.629  6.000  6.000 
  2.411  4.000  4.000 
@@ -67,14 +71,18 @@ The dependency list of the HepatitisC data.
 
 The Spanning Tree of the HepatitisC data.
 
+::
+
  0.606  4.000  5.000 
  0.539  3.000  4.000 
  0.086  0.000  7.000 
  0.083  1.000  7.000 
- 0.063  6.000  7.000 
- 0.051  4.000  7.000 
- 0.012  2.000  3.000 
+ 0.071  1.000  6.000 
+ 0.069  1.000  4.000 
+ 0.032  7.000  8.000 
+ 0.026  0.000  2.000 
 
 
 .. image:: span.png
    :scale: 50%
+
