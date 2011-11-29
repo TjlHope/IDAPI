@@ -44,13 +44,11 @@ def CPT(data, child, parent, states):
     #                             [P(cn|p0), P(cn|p1), ..., P(cn|pn)]]
     for r in data:
         cpt[r[child], r[parent]] += 1   # Increment necessary points
-    print cpt
     for c in cpt.T:
         s = sum(c)              # test for divide by zero
         if s:
             c /= s              # normalise the columns
     # end of coursework 1 task 2.
-    print cpt
     return cpt
 
 
@@ -295,24 +293,33 @@ def CPT_2(data, child, parent1, parent2, states):
     cpt = np.zeros((states[child], states[parent1], states[parent2]),
                    dtype="f4")
     # Coursework 3 task 1 should be inserted here...
-    cpt_1 = CPT(data, child, parent1, states)
-    cpt_2 = CPT(data, child, parent2, states)
-
+    for s in range(states[parent2]):
+        d = [row for row in data if row[parent2] == s]
+        cpt[:, :, s] = CPT(d, child, parent1, states)
     # end of Coursework 3 task 1.
     return cpt
 
 
-def ExampleBayesianNetwork(theData, noStates):
+def BayesianNetwork(data, arcs, states):
+    """Generate a Bayesian Network from a list of arcs."""
+    cpts = []
+    cpt = {1: Prior, 2: CPT, 3: CPT_2}
+    cpts = [cpt[len(arc)](*[data] + arc + [states]) for arc in arcs]
+    return cpts
+
+
+def ExampleBayesianNetwork(data, states):
     """Definition of a Bayesian Network."""
-    arcList = [[0], [1], [2, 0], [3, 2, 1], [4, 3], [5, 3]]
-    cpt0 = Prior(theData, 0, noStates)
-    cpt1 = Prior(theData, 1, noStates)
-    cpt2 = CPT(theData, 2, 0, noStates)
-    cpt3 = CPT_2(theData, 3, 2, 1, noStates)
-    cpt4 = CPT(theData, 4, 3, noStates)
-    cpt5 = CPT(theData, 5, 3, noStates)
-    cptList = [cpt0, cpt1, cpt2, cpt3, cpt4, cpt5]
-    return arcList, cptList
+    arcs = [[0], [1], [2, 0], [3, 2, 1], [4, 3], [5, 3]]
+    cpts = BayesianNetwork(data, arcs, states)
+    #cpt0 = Prior(data, 0, states)
+    #cpt1 = Prior(data, 1, states)
+    #cpt2 = CPT(data, 2, 0, states)
+    #cpt3 = CPT_2(data, 3, 2, 1, states)
+    #cpt4 = CPT(data, 4, 3, states)
+    #cpt5 = CPT(data, 5, 3, states)
+    #cpts = [cpt0, cpt1, cpt2, cpt3, cpt4, cpt5]
+    return arcs, cpts
 
 
 # Coursework 3 task 2 begins here
@@ -320,23 +327,23 @@ def ExampleBayesianNetwork(theData, noStates):
 # end of coursework 3 task 2
 
 
-def MDLSize(arcList, cptList, noDataPoints, noStates):
+def MDLSize(arcs, cpts, points, states):
     """Function to calculate the MDL size of a Bayesian Network."""
-    mdlSize = 0.0
+    mdl_size = 0.0
     # Coursework 3 task 3 begins here...
 
     # end of coursework 3 task 3.
-    return mdlSize
+    return mdl_size
 
 
 def JointProbability(dataPoint, arcList, cptList):
     """Function to calculate the joint probability of a single data point in a
     Network."""
-    jP = 1.0
+    jp = 1.0
     # Coursework 3 task 4 begins here...
 
     # end of coursework 3 task 4.
-    return jP
+    return jp
 
 
 def MDLAccuracy(theData, arcList, cptList):
@@ -362,7 +369,8 @@ def cw3():
     IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
     
-    cpt = CPT_2(data, 2, 1, 0, states)
+    arcs, cpts = ExampleBayesianNetwork(data, states)
+    mdl_size = MDLSize(arcs, cpts, points, states)
 
     IDAPI.AppendString(fl, "\nEND")
 
@@ -437,4 +445,5 @@ def PrincipalComponents(theData):
 if __name__ == '__main__':
     # Raise all errors from numpy functions.
     old_settings = np.seterr(all='raise')
+    np.set_printoptions(precision=3)
     cw3()
