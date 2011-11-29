@@ -14,9 +14,6 @@ import numpy as np
 import IDAPICourseworkLibrary as IDAPI
 
 
-# Raise all errors from numpy functions.
-old_settings = np.seterr(all='raise')
-
 #
 # Coursework 1 begins here
 #
@@ -39,7 +36,7 @@ def CPT(data, child, parent, states):
     from the data array it is assumed that the states are designated by
     consecutive integers starting with 0.
     """
-    cpt = np.zeros((states[child], states[parent]), float)
+    cpt = np.zeros((states[child], states[parent]), dtype="f4")
     # Coursework 1 task 2 should be inserted here...
     # cpt/ link matrix: P(C|P) = [[P(c0|p0), P(c0|p1), ..., P(c0|pn)],
     #                             [P(c1|p0), P(c1|p1), ..., P(c1|pn)],
@@ -47,12 +44,13 @@ def CPT(data, child, parent, states):
     #                             [P(cn|p0), P(cn|p1), ..., P(cn|pn)]]
     for r in data:
         cpt[r[child], r[parent]] += 1   # Increment necessary points
+    print cpt
     for c in cpt.T:
-        try:
-            c /= sum(c)         # normalise the columns
-        except (ZeroDivisionError, FloatingPointError):
-            continue            # whole column is zero - leave it that way
+        s = sum(c)              # test for divide by zero
+        if s:
+            c /= s              # normalise the columns
     # end of coursework 1 task 2.
+    print cpt
     return cpt
 
 
@@ -60,7 +58,7 @@ def JPT(data, row, col, states):
     """Function to calculate the joint probability table of two variables in
     the data set.
     """
-    jpt = np.zeros((states[row], states[col]), float)
+    jpt = np.zeros((states[row], states[col]), dtype="f4")
     # Coursework 1 task 3 should be inserted here...
     inc = 1 / data.shape[0]     # all sums to 1, so increment by proportion
     for r in data:
@@ -75,17 +73,16 @@ def JPT2CPT(jpt):
     """
     # Coursework 1 task 4 should be inserted here...
     for c in jpt.T:
-        try:
-            c /= sum(c)         # normalise the columns
-        except (ZeroDivisionError, FloatingPointError):
-            continue            # whole column is zero - leave it that way
+        s = sum(c)              # test for divide by zero
+        if s:
+            c /= s              # normalise the columns
     # end of coursework 1 task 4.
     return jpt
 
 
 def Query(query, network):
     """Function to query a naive Bayesian network."""
-    root_pdf = np.zeros(network[0].shape[0], float)
+    root_pdf = np.zeros(network[0].shape[0], dtype="f4")
     # Coursework 1 task 5 should be inserted here...
     for i, p in enumerate(network[0]):
         root_pdf[i] = p         # as P(P|C0&...&Cn) = alpha P(D)P(C0|D)...
@@ -290,17 +287,19 @@ def cw2():
 #
 
 
-def CPT_2(theData, child, parent1, parent2, noStates):
-    """Function to compute a CPT with multiple parents from he data set it is
+def CPT_2(data, child, parent1, parent2, states):
+    """Function to compute a CPT with multiple parents from the data set it is
     assumed that the states are designated by consecutive integers starting
     with 0.
     """
-    cPT = np.zeros((noStates[child], noStates[parent1], noStates[parent2]),
-                   float)
+    cpt = np.zeros((states[child], states[parent1], states[parent2]),
+                   dtype="f4")
     # Coursework 3 task 1 should be inserted here...
+    cpt_1 = CPT(data, child, parent1, states)
+    cpt_2 = CPT(data, child, parent2, states)
 
     # end of Coursework 3 task 1.
-    return cPT
+    return cpt
 
 
 def ExampleBayesianNetwork(theData, noStates):
@@ -362,7 +361,8 @@ def cw3():
     IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
     IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
-
+    
+    cpt = CPT_2(data, 2, 1, 0, states)
 
     IDAPI.AppendString(fl, "\nEND")
 
@@ -435,4 +435,6 @@ def PrincipalComponents(theData):
 
 
 if __name__ == '__main__':
-    cw2()
+    # Raise all errors from numpy functions.
+    old_settings = np.seterr(all='raise')
+    cw3()
