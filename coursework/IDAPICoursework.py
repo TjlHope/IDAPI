@@ -349,6 +349,24 @@ def MDLAccuracy(theData, arcList, cptList):
     return mdlAccuracy
 
 
+def cw3():
+    """main() part of Coursework 03."""
+    fl = "Results03.txt"
+    if os.path.exists(fl):
+        os.remove(fl)
+    
+    (variables, roots, states,
+        points, datain) = IDAPI.ReadFile("HepatitisC.txt")
+    data = np.array(datain)
+    IDAPI.AppendString(fl, "Coursework Two Results by:\n")
+    IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
+    IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
+    IDAPI.AppendString(fl, "")
+
+
+    IDAPI.AppendString(fl, "\nEND")
+
+
 #
 # End of coursework 3
 #
