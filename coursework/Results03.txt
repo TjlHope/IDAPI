@@ -3,3 +3,17 @@ Coursework Two Results by:
 * tjh08 - Thomas Hope
 * jzy08 - Jason Ye
 
+The MDLSize of the network:
+3972.430 
+
+The MDLAccuracy of the network:
+ 0.000 
+
+The MDLScore of the network:
+3972.430 
+
+The best score of the network with one arc removed:
+1788.129 
+
+
+END

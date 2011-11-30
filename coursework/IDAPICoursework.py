@@ -7,6 +7,7 @@ from __future__ import division
 import sys
 import os
 from operator import itemgetter
+import logging as log
 
 #from numpy import *
 import numpy as np
@@ -313,7 +314,7 @@ def ExampleBayesianNetwork(data, states):
     return arcs, cpts
 
 
-# Coursework 3 task 2 begins here
+# Coursework 3 task 2 begins here...
 def most_connected(tree, nodes):
     """Return the most connected node, so it can be removed."""
     # get a nice representation of immediate connections
@@ -336,13 +337,21 @@ def most_connected(tree, nodes):
         return None
 
 
-def BayesianRoots(tree, variables, num_roots):
+def bayesian_roots(tree, roots, variables):
     """Finds the num_roots maximally weighted root nodes without a direct
     connection."""
     # initiate array of nodes
-    nodes = np.zeros(variables, dtype=[('name', np.int), ('count', np.int),
-                                       ('weight', np.float)])
-    nodes[:]['name'] = np.arange(variables, dtype=np.int)
+    count_type = np.dtype([('name', np.int), ('count', np.int),
+                           ('weight', np.float)])
+    nodes = np.zeros(max(variables) + 1, dtype=count_type)
+    for i, n in enumerate(nodes):
+        # have sparse array to allow indexing
+        if i in variables:
+            n['name'] = i
+        else:
+            nodes[i] = (-1, -10, -10)
+    #nodes[:]['name'] = np.array(list(variables), dtype=np.int)
+    log.debug("Nodes:\n{0}".format(nodes))
     # populate node data
     for branch in tree:
         nodes[int(branch[1])]['count'] += 1
@@ -354,60 +363,113 @@ def BayesianRoots(tree, variables, num_roots):
         # Order to try and find the best match
         nodes.sort(order=('count', 'weight'))
         # Can only order ascending, so get last num_roots
-        roots = nodes[-num_roots:]
-        # See if there's a connecting node in the root selection
-        joining_node = most_connected(tree, roots)
-        if joining_node is not None:
-            # If it's there, give it minimum priority.
-            nodes[- num_roots + joining_node]['count'] = -1
-            nodes[- num_roots + joining_node]['weight'] = -1
+        root_nodes = nodes[-roots:]
+        if root_nodes.shape[0] > 1:
+            # See if there's a connecting node in the root selection
+            joining_node = most_connected(tree, root_nodes)
+            if joining_node is not None:
+                # If it's there, give it minimum priority...
+                nodes[- roots + joining_node]['count'] = -1
+                nodes[- roots + joining_node]['weight'] = -1
+                continue        # ... and go back and sort again.
+        break           # Have the root nodes
+    return root_nodes[:]['name']
+
+
+def split_tree(tree, nodes0, nodes1):
+    """Splits the tree in two, each only containing the given nodes.
+    nodes{0,1} should be disjoint and exhaustive."""
+    # Get the tree in a nice format
+    connections = tree[:, (1, 2)].astype(np.int)
+    # Initiate the two trees
+    tree0 = []
+    tree1 = []
+    # Check each connection, putting it in correct tree
+    for i, connection in enumerate(connections):
+        if connection[0] in nodes0 and connection[1] not in nodes1:
+            tree0.append(tree[i])
+        elif connection[0] in nodes1 and connection[1] not in nodes0:
+            tree1.append(tree[i])
+        elif connection[0] not in nodes0 and connection[0] not in nodes1:
+            raise ValueError("Node arrays are not exhaustive: {0} not found."
+                                .format(connection[0]))
+        elif connection[1] not in nodes0 and connection[1] not in nodes1:
+            raise ValueError("Node arrays are not exhaustive: {0} not found."
+                                .format(connection[1]))
         else:
+            raise ValueError("Node arrays are not disjoint: {0} spans arrays."
+                                .format(connection))
+    # Return two new trees as arrays
+    return np.array(tree0), np.array(tree1)
+
+
+def bayesian_arcs(tree, roots, nodes):
+    """Finds the directional arc connections from the root nodes."""
+    # Initiate arcs with root nodes of the tree
+    root_nodes = bayesian_roots(tree, roots, nodes)
+    log.debug("Roots:\t{0}".format(root_nodes))
+    arcs = [[root] for root in root_nodes]
+    # Get the tree in a nice format
+    connections = tree[:, (1, 2)].astype(np.int) if tree.shape[0] else []
+    # Controll sets (only one needed, but the two lend clarity)
+    visited = set(root_nodes)
+    remaining = set(nodes) - visited
+    while remaining:                # We haven't visited them all yet.
+        for node in remaining:
+            node_cons = []
+            for connection in connections:      # Find valid connections
+                if node == connection[0] and connection[1] in visited:
+                    node_cons.append(connection[1])
+                elif node == connection[1] and connection[0] in visited:
+                    node_cons.append(connection[0])
+            if node_cons:       # We have [a] valid connection[s]
+                arcs.append([node] + node_cons)         # Add group to arcs...
+                visited.add(node)       # ... and add node to visited.
+        if remaining.isdisjoint(visited):
+            # No nodes visited this iteration
+            log.warn("No nodes visited this iteration")
+            log.info("... root nodes do not cover whole tree, so split tree.")
+            tree0, tree1 = split_tree(tree, visited, remaining)
+            log.debug("tree 0:\t{0}\n{1}".format(visited, tree0))
+            log.debug("tree 1:\t{0}\n{1}".format(remaining, tree1))
+            # TODO: work for more root values other than 2
+            arcs = (bayesian_arcs(tree0, roots - 1, visited) +
+                    bayesian_arcs(tree1, 1, remaining))
             break
-    return roots[:]['name']
+        else:
+            remaining -= visited        # Update node list removing visited.
+    return arcs
 
 
-def BayesianArcs(tree, roots, variables):
-    pass
-
-
-def BayesianCPTs(data, arcs, states):
-    """Generate a Bayesian Network from a list of arcs."""
+def bayesian_CPTs(data, arcs, states):
+    """Generate the CPTs for a Bayesian Network from a list of arcs."""
     cpts = []
-    cpt = {1: Prior, 2: CPT, 3: CPT_2}
-    cpts = [cpt[len(arc)](*[data] + arc + [states]) for arc in arcs]
+    # Mapping of arc sizes to geration functions.
+    cpt_func = {1: Prior, 2: CPT, 3: CPT_2}
+    # Generate CPTs from arcs using mapping.
+    cpts = [cpt_func[len(arc)](*[data] + arc + [states]) for arc in arcs]
     return cpts
 
 
-def BayesianNetwork(data, variables, states, num_roots):
-    dep_matrix = DependencyMatrix(data, variables, states)
-    dep_list = DependencyList(dep_matrix)
-    tree = SpanningTreeAlgorithm(dep_list, variables)
-    roots = BayesianRoots(tree, variables, num_roots)
-    print roots
-    arcs = BayesianArcs(tree, roots, variables)
-    print arcs
-    cpts = BayesianCPTs(data, arcs, states)
+def BayesianNetwork(data, tree, variables, states, roots):
+    """Generate a Bayesian Network from data."""
+    log.info("Bayesian Network for tree:\n{0}".format(tree))
+    arcs = bayesian_arcs(tree, roots, range(variables))
+    log.info("has arcs:\n{0}".format(arcs))
+    cpts = bayesian_CPTs(data, arcs, states)
     return arcs, cpts
-# end of coursework 3 task 2
+# end of coursework 3 task 2.
 
 
 def MDLSize(arcs, cpts, points, states):
     """Function to calculate the MDL size of a Bayesian Network."""
     mdl_size = 0.0
     # Coursework 3 task 3 begins here...
-    size = {1: lambda p: p.shape[0] - 1,
-            2: lambda c: (c.shape[0] - 1) * c.shape[1],
-            3: lambda c2: (c2.shape[0] - 1) * c2.shape[1] * c2.shape[2]}
-    B = sum([size[len(cpt.shape)](cpt) for cpt in cpts])
-    reduce(lambda a, b: a + b, arcs)
-
-    N= 5
-                
-    multiplicand = np.log2(N)/2
-
-    sizeB= B* multiplicand
-        
-    print ("sizeB=" + sizeB)
+    link_size = {1: lambda p: p.shape[0] - 1,
+                 2: lambda c: (c.shape[0] - 1) * c.shape[1],
+                 3: lambda c2: (c2.shape[0] - 1) * c2.shape[1] * c2.shape[2]}
+    modB = sum([link_size[cpt.ndim](cpt) for cpt in cpts])
+    mdl_size = modB * np.log2(points)/2
     # end of coursework 3 task 3.
     return mdl_size
 
@@ -417,6 +479,7 @@ def JointProbability(data_point, arcs, cpts):
     Network."""
     jp = 1.0
     # Coursework 3 task 4 begins here...  point = np.array(data_point)
+    point = np.array(data_point)
     for i, arc in enumerate(arcs):
         address = point[arc]
         jp *= cpts[i].item(*address)
@@ -434,6 +497,18 @@ def MDLAccuracy(data, arcs, cpts):
     return mdl_accuracy
 
 
+# Coursework 3 task 6 begins here...
+def best_network(data, tree, variables, points, states, roots):
+    scores = []
+    for i in range(len(tree)):
+        t = tree[(range(i) + range(i + 1, len(tree)))]
+        arcs, cpts = BayesianNetwork(data, t, variables, states, roots)
+        scores.append(MDLSize(arcs, cpts, points, states) -
+                      MDLAccuracy(data, arcs, cpts))
+    return min(scores)
+# end of coursework 3 task 6.
+
+
 def cw3():
     """main() part of Coursework 03."""
     fl = "Results03.txt"
@@ -443,22 +518,36 @@ def cw3():
     (variables, roots, states,
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
+    # p1
     IDAPI.AppendString(fl, "Coursework Two Results by:\n")
     IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
     IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
-    
-    print states
-    arcs, cpts = ExampleBayesianNetwork(data, states)
+    # Generate the network
+    #arcs, cpts = ExampleBayesianNetwork(data, states)
+    dep_matrix = DependencyMatrix(data, variables, states)
+    dep_list = DependencyList(dep_matrix)
+    tree = SpanningTreeAlgorithm(dep_list, variables)
+    arcs, cpts = BayesianNetwork(data, tree, variables, states, roots)
+    # p2
     mdl_size = MDLSize(arcs, cpts, points, states)
-    jp = JointProbability([1, 0, 1, 2, 1, 0], arcs, cpts)
-    print jp
-    mdl_acc = MDLAccuracy(data,arcs,cpts)
-    print mdl_acc
-    sys.exit()
-    arcs, cpts = BayesianNetwork(data, variables, states, roots)
-
+    IDAPI.AppendString(fl, "The MDLSize of the network:")
+    IDAPI.AppendList(fl, np.array([mdl_size]))
+    # p3
+    mdl_acc = MDLAccuracy(data, arcs, cpts)
+    IDAPI.AppendString(fl, "The MDLAccuracy of the network:")
+    IDAPI.AppendList(fl, np.array([mdl_acc]))
+    # p4
+    mdl_score = mdl_size - mdl_acc
+    IDAPI.AppendString(fl, "The MDLScore of the network:")
+    IDAPI.AppendList(fl, np.array([mdl_score]))
+    # p5
+    best_score = best_network(data, tree, variables, points, states, roots)
+    IDAPI.AppendString(fl, "The best score of the network with one arc removed:")
+    IDAPI.AppendList(fl, np.array([best_score]))
     IDAPI.AppendString(fl, "\nEND")
+    ####
+    os.system('cat {0}'.format(fl))
 
 
 #
@@ -532,5 +621,6 @@ if __name__ == '__main__':
     # Raise all errors from numpy functions.
     old_settings = np.seterr(all='raise')
     np.set_printoptions(precision=3)
+    log.basicConfig(level=log.ERROR)
     cw3()
     sys.exit(0)
