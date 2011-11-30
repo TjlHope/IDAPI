@@ -420,6 +420,15 @@ def MDLAccuracy(theData, arcList, cptList):
     mdlAccuracy = 0
     # Coursework 3 task 5 begins here...
 
+    newCptList = []
+    # take the log likelihood of each cell
+    for cpt in cptList:
+        for cell in np.nditer(cpt):
+            if cell:
+                cell = np.log2(cell)
+        newCptList.append(cpt)
+    
+    print newCptList
     # end of coursework 3 task 5.
     return mdlAccuracy
 
@@ -438,8 +447,11 @@ def cw3():
     IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
     
-    arcs, cpts = BayesianNetwork(data, variables, states, roots)
+    arcs, cpts = ExampleBayesianNetwork(data, states)
     mdl_size = MDLSize(arcs, cpts, points, states)
+    mdl_acc = MDLAccuracy(data,arcs,cpts)
+    print mdl_acc
+    arcs, cpts = BayesianNetwork(data, variables, states, roots)
 
     IDAPI.AppendString(fl, "\nEND")
 
