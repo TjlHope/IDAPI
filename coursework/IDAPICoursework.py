@@ -406,35 +406,26 @@ def MDLSize(arcs, cpts, points, states):
     return mdl_size
 
 
-def JointProbability(dataPoint, arcList, cptList):
+def JointProbability(data_point, arcs, cpts):
     """Function to calculate the joint probability of a single data point in a
     Network."""
     jp = 1.0
-    # Coursework 3 task 4 begins here...
-    point = np.array(dataPoint)
-    for i, arc in enumerate(arcList):
+    # Coursework 3 task 4 begins here...  point = np.array(data_point)
+    for i, arc in enumerate(arcs):
         address = point[arc]
-        jp *= cptList[i].item(*address)
+        jp *= cpts[i].item(*address)
     # end of coursework 3 task 4.
     return jp
 
 
-def MDLAccuracy(theData, arcList, cptList):
+def MDLAccuracy(data, arcs, cpts):
     """Function to calculate the MDLAccuracy from a data set."""
-    mdlAccuracy = 0
+    mdl_accuracy = 0
     # Coursework 3 task 5 begins here...
-
-    newCptList = []
-    # take the log likelihood of each cell
-    for cpt in cptList:
-        for cell in np.nditer(cpt):
-            if cell:
-                cell = np.log2(cell)
-        newCptList.append(cpt)
-    
-    #print newCptList
+    for d in data:
+        mdl_accuracy *= JointProbability(d, arcs, cpts)
     # end of coursework 3 task 5.
-    return mdlAccuracy
+    return mdl_accuracy
 
 
 def cw3():
