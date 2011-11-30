@@ -341,7 +341,7 @@ def JointProbability(dataPoint, arcList, cptList):
     Network."""
     jp = 1.0
     # Coursework 3 task 4 begins here...
-
+    
     # end of coursework 3 task 4.
     return jp
 
@@ -351,6 +351,12 @@ def MDLAccuracy(theData, arcList, cptList):
     mdlAccuracy = 0
     # Coursework 3 task 5 begins here...
 
+    newCptList = []
+    # take the log likelihood of each cell
+    for cpt in cptList:
+        newCptList.append(np.log2(cpt))
+    
+    print cpt
     # end of coursework 3 task 5.
     return mdlAccuracy
 
@@ -370,7 +376,9 @@ def cw3():
     IDAPI.AppendString(fl, "")
     
     arcs, cpts = ExampleBayesianNetwork(data, states)
-    mdl_size = MDLSize(arcs, cpts, points, states)
+    mdl_size = MDLAccuracy(data,arcs,cpts)
+    print mdl_size
+    #MDLSize(arcs, cpts, points, states)
 
     IDAPI.AppendString(fl, "\nEND")
 
