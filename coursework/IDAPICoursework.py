@@ -4,6 +4,7 @@
 
 from __future__ import division
 
+import sys
 import os
 from operator import itemgetter
 
@@ -410,7 +411,10 @@ def JointProbability(dataPoint, arcList, cptList):
     Network."""
     jp = 1.0
     # Coursework 3 task 4 begins here...
-
+    point = np.array(dataPoint)
+    for i, arc in enumerate(arcList):
+        address = point[arc]
+        jp *= cptList[i].item(*address)
     # end of coursework 3 task 4.
     return jp
 
@@ -428,7 +432,7 @@ def MDLAccuracy(theData, arcList, cptList):
                 cell = np.log2(cell)
         newCptList.append(cpt)
     
-    print newCptList
+    #print newCptList
     # end of coursework 3 task 5.
     return mdlAccuracy
 
@@ -447,10 +451,14 @@ def cw3():
     IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
     
+    print states
     arcs, cpts = ExampleBayesianNetwork(data, states)
     mdl_size = MDLSize(arcs, cpts, points, states)
+    jp = JointProbability([1, 0, 1, 2, 1, 0], arcs, cpts)
+    print jp
     mdl_acc = MDLAccuracy(data,arcs,cpts)
     print mdl_acc
+    sys.exit()
     arcs, cpts = BayesianNetwork(data, variables, states, roots)
 
     IDAPI.AppendString(fl, "\nEND")
@@ -528,3 +536,4 @@ if __name__ == '__main__':
     old_settings = np.seterr(all='raise')
     np.set_printoptions(precision=3)
     cw3()
+    sys.exit(0)
