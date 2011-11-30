@@ -400,8 +400,14 @@ def MDLSize(arcs, cpts, points, states):
             3: lambda c2: (c2.shape[0] - 1) * c2.shape[1] * c2.shape[2]}
     B = sum([size[len(cpt.shape)](cpt) for cpt in cpts])
     reduce(lambda a, b: a + b, arcs)
-        
 
+    N= 5
+                
+    multiplicand = np.log2(N)/2
+
+    sizeB= B* multiplicand
+        
+    print ("sizeB=" + sizeB)
     # end of coursework 3 task 3.
     return mdl_size
 
