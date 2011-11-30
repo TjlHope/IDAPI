@@ -38,7 +38,7 @@ def CPT(data, child, parent, states):
     from the data array it is assumed that the states are designated by
     consecutive integers starting with 0.
     """
-    cpt = np.zeros((states[child], states[parent]), dtype="f4")
+    cpt = np.zeros((states[child], states[parent]), dtype='f8')
     # Coursework 1 task 2 should be inserted here...
     # cpt/ link matrix: P(C|P) = [[P(c0|p0), P(c0|p1), ..., P(c0|pn)],
     #                             [P(c1|p0), P(c1|p1), ..., P(c1|pn)],
@@ -58,7 +58,7 @@ def JPT(data, row, col, states):
     """Function to calculate the joint probability table of two variables in
     the data set.
     """
-    jpt = np.zeros((states[row], states[col]), dtype="f4")
+    jpt = np.zeros((states[row], states[col]), dtype='f8')
     # Coursework 1 task 3 should be inserted here...
     inc = 1 / data.shape[0]     # all sums to 1, so increment by proportion
     for r in data:
@@ -82,7 +82,7 @@ def JPT2CPT(jpt):
 
 def Query(query, network):
     """Function to query a naive Bayesian network."""
-    root_pdf = np.zeros(network[0].shape[0], dtype="f4")
+    root_pdf = np.zeros(network[0].shape[0], dtype='f8')
     # Coursework 1 task 5 should be inserted here...
     for i, p in enumerate(network[0]):
         root_pdf[i] = p         # as P(P|C0&...&Cn) = alpha P(D)P(C0|D)...
@@ -207,7 +207,7 @@ def DependencyList(dep_matrix):
     return np.array(dep_list)
 
 
-# Coursework 2 task 4
+# Coursework 2 task 4 begins here...
 def connected(tree, src, dst, path=[]):
     for item in tree:
         #if item[0] in path and item[2] in path:
@@ -229,7 +229,7 @@ def SpanningTreeAlgorithm(dep_list, variables):
         if item[1] != item[2] and not(connected(spanning_tree, item[1], item[2])):
             spanning_tree.append(item)
     return np.array(spanning_tree)
-# End of Coursework 2 task 4
+# End of Coursework 2 task 4.
 
 
 def dot(l, name="network.dot"):
@@ -292,7 +292,7 @@ def CPT_2(data, child, parent1, parent2, states):
     with 0.
     """
     cpt = np.zeros((states[child], states[parent1], states[parent2]),
-                   dtype="f4")
+                   dtype='f8')
     # Coursework 3 task 1 should be inserted here...
     for s in range(states[parent2]):
         d = [row for row in data if row[parent2] == s]
@@ -477,22 +477,25 @@ def MDLSize(arcs, cpts, points, states):
 def JointProbability(data_point, arcs, cpts):
     """Function to calculate the joint probability of a single data point in a
     Network."""
-    jp = 1.0
-    # Coursework 3 task 4 begins here...  point = np.array(data_point)
+    jp = np.ones(1, dtype='f8')
+    # Coursework 3 task 4 begins here...
     point = np.array(data_point)
     for i, arc in enumerate(arcs):
         address = point[arc]
-        jp *= cpts[i].item(*address)
+        value = cpts[i].item(*address)
+        jp *= value
     # end of coursework 3 task 4.
     return jp
 
 
 def MDLAccuracy(data, arcs, cpts):
     """Function to calculate the MDLAccuracy from a data set."""
-    mdl_accuracy = 0
+    mdl_accuracy = 0.0
     # Coursework 3 task 5 begins here...
     for d in data:
-        mdl_accuracy *= JointProbability(d, arcs, cpts)
+        jp = JointProbability(d, arcs, cpts)
+        jp_l2 = np.log2(jp) if jp else 0        # Prevent log(0)
+        mdl_accuracy += jp_l2
     # end of coursework 3 task 5.
     return mdl_accuracy
 
@@ -511,7 +514,7 @@ def best_network(data, tree, variables, points, states, roots):
 
 def cw3():
     """main() part of Coursework 03."""
-    fl = "Results03.txt"
+    fl = "IDAPIResults03.txt"
     if os.path.exists(fl):
         os.remove(fl)
     
@@ -519,9 +522,9 @@ def cw3():
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
     # p1
-    IDAPI.AppendString(fl, "Coursework Two Results by:\n")
-    IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
-    IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
+    IDAPI.AppendString(fl, "Coursework Two Results by:")
+    IDAPI.AppendString(fl, "\ttjh08 - Thomas Hope")
+    IDAPI.AppendString(fl, "\tjzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
     # Generate the network
     #arcs, cpts = ExampleBayesianNetwork(data, states)
@@ -545,7 +548,8 @@ def cw3():
     best_score = best_network(data, tree, variables, points, states, roots)
     IDAPI.AppendString(fl, "The best score of the network with one arc removed:")
     IDAPI.AppendList(fl, np.array([best_score]))
-    IDAPI.AppendString(fl, "\nEND")
+    # pn
+    IDAPI.AppendString(fl, "END")
     ####
     os.system('cat {0}'.format(fl))
 
