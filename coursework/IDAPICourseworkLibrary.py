@@ -69,7 +69,7 @@ def AppendString(filename, aString):
 #
 def SaveEigenface(component, filename):
     """Function to turn a principal component into an image and save it. The
-    assumed resolution os 92 by 112 pixels. The component is a one dimensional
+    assumed resolution is 92 by 112 pixels. The component is a one dimensional
     representation of an image with each row concatinated.
     """
     theMax = max(component)

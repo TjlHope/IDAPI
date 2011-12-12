@@ -591,10 +591,10 @@ def Covariance(data):
     return covar
 
 
-def CreateEigenfaceFiles(theBasis):
-    pass        # delete this when you do the coursework
+def CreateEigenfaceFiles(basis):
     # Coursework 4 task 3 begins here...
-
+    for i, component in enumerate(basis):
+        IDAPI.SaveEigenface(component, "PrincipalComponent{0}.jpg".format(i))
     # end of coursework 4 task 3.
 
 
@@ -635,6 +635,9 @@ def cw4():
     (variables, roots, states,
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
+    basis = IDAPI.ReadEigenfaceBasis()
+    print basis.shape
+    IDAPI.SaveEigenface()
     # p1
 
     # pn
