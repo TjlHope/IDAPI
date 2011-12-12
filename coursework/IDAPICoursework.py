@@ -522,7 +522,7 @@ def cw3():
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
     # p1
-    IDAPI.AppendString(fl, "Coursework Two Results by:")
+    IDAPI.AppendString(fl, "Coursework Three Results by:")
     IDAPI.AppendString(fl, "\ttjh08 - Thomas Hope")
     IDAPI.AppendString(fl, "\tjzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
@@ -561,22 +561,32 @@ def cw3():
 #
 
 
-def Mean(theData):
-    realData = theData.astype(float)
-    noVariables = theData.shape[1]
-    mean = []
+def Mean(data):
+    # not needed because of 'from __future__ import division'
+    #real_data = data.astype(float)
+    num_vars = data.shape[1]
+    #mean = []
     # Coursework 4 task 1 begins here...
-
+    if num_vars:
+        mean = data.sum(0) / num_vars
+    else:
+        mean = np.zeros(data.shape[0])
     # end of coursework 4 task 1.
-    return np.array(mean)
+    return mean
 
 
-def Covariance(theData):
-    realData = theData.astype(float)
-    noVariables = theData.shape[1]
-    covar = np.zeros((noVariables, noVariables), float)
+def Covariance(data):
+    # not needed because of 'from __future__ import division'
+    #real_data = data.astype(float)
+    num_vars = data.shape[1]
+    covar = np.zeros((num_vars, num_vars), float)
     # Coursework 4 task 2 begins here...
-
+    mean = Mean(data)
+    for i, i_var in enumerate(data.T):
+        for j, j_var in enumerate(data.T[i:num_vars]):
+            covar[i, j] = covar[j, i] = (((i_var - mean[i]) *
+                                          (j_var - mean[j])).sum(0) /
+                                         (num_vars - 1))
     # end of coursework 4 task 2.
     return covar
 
@@ -616,6 +626,23 @@ def PrincipalComponents(theData):
     return np.array(orthoPhi)
 
 
+def cw4():
+    """main() part of Coursework 04."""
+    fl = "IDAPIResults04.txt"
+    if os.path.exists(fl):
+        os.remove(fl)
+    
+    (variables, roots, states,
+        points, datain) = IDAPI.ReadFile("HepatitisC.txt")
+    data = np.array(datain)
+    # p1
+
+    # pn
+    IDAPI.AppendString(fl, "END")
+    ####
+    os.system('cat {0}'.format(fl))
+
+
 #
 # main() part of program
 #
@@ -626,5 +653,5 @@ if __name__ == '__main__':
     old_settings = np.seterr(all='raise')
     np.set_printoptions(precision=3)
     log.basicConfig(level=log.ERROR)
-    cw3()
+    cw4()
     sys.exit(0)
