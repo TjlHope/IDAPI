@@ -564,13 +564,14 @@ def cw3():
 def Mean(data):
     # not needed because of 'from __future__ import division'
     #real_data = data.astype(float)
-    num_vars = data.shape[1]
+    #num_vars = data.shape[1]
     #mean = []
     # Coursework 4 task 1 begins here...
-    if num_vars:
-        mean = data.sum(0) / num_vars
-    else:
-        mean = np.zeros(data.shape[0])
+    #if data.shape[0]:
+        #mean = data.sum(0) / data.shape[0]
+    #else:
+        #mean = np.zeros(data.shape[0])
+    mean = data.mean(0)
     # end of coursework 4 task 1.
     return mean
 
@@ -578,15 +579,16 @@ def Mean(data):
 def Covariance(data):
     # not needed because of 'from __future__ import division'
     #real_data = data.astype(float)
-    num_vars = data.shape[1]
-    covar = np.zeros((num_vars, num_vars), float)
+    #num_vars = data.shape[1]
+    #covar = np.zeros((num_vars, num_vars), float)
     # Coursework 4 task 2 begins here...
-    mean = Mean(data)
-    for i, i_var in enumerate(data.T):
-        for j, j_var in enumerate(data.T[i:num_vars]):
-            covar[i, j] = covar[j, i] = (((i_var - mean[i]) *
-                                          (j_var - mean[j])).sum(0) /
-                                         (num_vars - 1))
+    #mean = Mean(data)
+    #for i, i_var in enumerate(data.T):
+        #for j, j_var in enumerate(data.T):
+            #covar[i, j] = (((i_var - mean[i]) *
+                            #(j_var - mean[j])).sum(0) /
+                           #(num_vars - 1))
+    covar = np.cov(data.T)
     # end of coursework 4 task 2.
     return covar
 
@@ -598,24 +600,30 @@ def CreateEigenfaceFiles(basis):
     # end of coursework 4 task 3.
 
 
-def ProjectFace(theBasis, theMean, theFaceImage):
-    magnitudes = []
+def ProjectFace(basis, mean, face_image):
+    #magnitudes = []
     # Coursework 4 task 4 begins here...
-
+    magnitudes = np.matrix(face_image - mean) * np.matrix(basis.T)
     # end of coursework 4 task 4.
-    return np.array(magnitudes)
+    return np.array(magnitudes)[0]
 
 
-def CreatePartialReconstructions(aBasis, aMean, componentMags):
-    pass        # delete this when you do the coursework
+def CreatePartialReconstructions(basis, mean, magnitudes):
     # Coursework 4 task 5 begins here...
-
+    b_matrix = np.matrix(basis)
+    len_m = len(magnitudes)
+    fl_name = "PartialReconstruction{0}.jpg"
+    IDAPI.SaveEigenface(mean, fl_name.format('Mean'))
+    for i in range(len_m):
+        m_matrix = np.matrix(magnitudes * ([1] * i + [0] * (len_m - i)))
+        IDAPI.SaveEigenface(np.array((m_matrix * b_matrix + mean))[0],
+                            fl_name.format(i))
     # end of coursework 4 task 5.
 
 
 def PrincipalComponents(theData):
     orthoPhi = []
-    # Coursework 4 task 3 begins here...
+    # Coursework 4 task 6 begins here...
     # The first part is almost identical to the above Covariance function, but
     # because the data has so many variables you need to use the Kohonen Lowe
     # method described in lecture 15 The output should be a list of the
@@ -628,22 +636,42 @@ def PrincipalComponents(theData):
 
 def cw4():
     """main() part of Coursework 04."""
-    fl = "IDAPIResults04.txt"
+    fl = "IDAPIResults04.rst"
     if os.path.exists(fl):
         os.remove(fl)
     
     (variables, roots, states,
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
-    basis = IDAPI.ReadEigenfaceBasis()
-    print basis.shape
-    IDAPI.SaveEigenface()
     # p1
+    IDAPI.AppendString(fl, "Coursework Four Results by:\n")
+    IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
+    IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
+    IDAPI.AppendString(fl, "")
+    # p2
+    hepC_mean = Mean(data)
+    IDAPI.AppendString(fl, "The Mean vector of the HepatitisC data set:")
+    IDAPI.AppendString(fl, "\n::\n")
+    IDAPI.AppendList(fl, hepC_mean)
+    # p3
+    hepC_covar = Covariance(data)
+    IDAPI.AppendString(fl, "The Covariance matrix of the HepatitisC data set:")
+    IDAPI.AppendString(fl, "\n::\n")
+    IDAPI.AppendArray(fl, hepC_covar)
+    # p4
+    basis = np.array(IDAPI.ReadEigenfaceBasis())
+    mean_face = np.array(IDAPI.ReadOneImage("MeanImage.jpg"))
+    face = np.array(IDAPI.ReadOneImage('c.pgm'))
+    magnitudes = ProjectFace(basis, mean_face, face)
+    CreatePartialReconstructions(basis, mean_face, magnitudes)
 
     # pn
     IDAPI.AppendString(fl, "END")
     ####
-    os.system('cat {0}'.format(fl))
+    #os.system('cat {0}'.format(fl))
+    #os.system("rst2latex.py {0}.rst {0}.tex".format(fl.rpartition('.')[0]))
+    #os.system("pdflatex {0}.tex".format(fl.rpartition('.')[0]))
+    #os.system("xdg-open {0}.pdf".format(fl.rpartition('.')[0]))
 
 
 #
