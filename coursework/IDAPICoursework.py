@@ -593,10 +593,11 @@ def Covariance(data):
     return covar
 
 
-def CreateEigenfaceFiles(basis):
+def CreateEigenfaceFiles(basis, fl="PrincipalComponent"):
     # Coursework 4 task 3 begins here...
+    fl_name = ''.join((fl, "{0}.jpg"))
     for i, component in enumerate(basis):
-        IDAPI.SaveEigenface(component, "PrincipalComponent{0}.jpg".format(i))
+        IDAPI.SaveEigenface(component, fl_name.format(i))
     # end of coursework 4 task 3.
 
 
@@ -608,30 +609,37 @@ def ProjectFace(basis, mean, face_image):
     return np.array(magnitudes)[0]
 
 
-def CreatePartialReconstructions(basis, mean, magnitudes):
+def CreatePartialReconstructions(basis, mean, magnitudes,
+                                 fl="PartialReconstruction"):
     # Coursework 4 task 5 begins here...
     b_matrix = np.matrix(basis)
-    len_m = len(magnitudes)
-    fl_name = "PartialReconstruction{0}.jpg"
-    IDAPI.SaveEigenface(mean, fl_name.format('Mean'))
-    for i in range(len_m):
-        m_matrix = np.matrix(magnitudes * ([1] * i + [0] * (len_m - i)))
+    len_mag = len(magnitudes)
+    fl_name = ''.join((fl, "{0}.jpg"))
+    #IDAPI.SaveEigenface(mean, fl_name.format('Mean'))
+    for i in range(len_mag + 1):
+        m_matrix = np.matrix(magnitudes * ([1] * i + [0] * (len_mag - i)))
         IDAPI.SaveEigenface(np.array((m_matrix * b_matrix + mean))[0],
                             fl_name.format(i))
     # end of coursework 4 task 5.
 
 
-def PrincipalComponents(theData):
-    orthoPhi = []
+def PrincipalComponents(data):
+    #ortho_phi = []
     # Coursework 4 task 6 begins here...
     # The first part is almost identical to the above Covariance function, but
     # because the data has so many variables you need to use the Kohonen Lowe
     # method described in lecture 15 The output should be a list of the
     # principal components normalised and sorted in descending order of their
     # eignevalues magnitudes.
-
+    mean_centered_matrix = np.matrix(data - Mean(data))
+    eigenvalues, eigenvectors = np.linalg.eig(mean_centered_matrix *
+                                              mean_centered_matrix.T)
+    phi = mean_centered_matrix.T * eigenvectors
+    phi = phi / np.sqrt(np.square(phi).sum(0))
+    sort_idxs = eigenvalues.argsort()
+    ortho_phi = phi.T[sort_idxs]
     # end of coursework 4 task 6.
-    return np.array(orthoPhi)
+    return np.array(ortho_phi)
 
 
 def cw4():
@@ -643,35 +651,74 @@ def cw4():
     (variables, roots, states,
         points, datain) = IDAPI.ReadFile("HepatitisC.txt")
     data = np.array(datain)
-    # p1
+    # title
     IDAPI.AppendString(fl, "Coursework Four Results by:\n")
     IDAPI.AppendString(fl, "* tjh08 - Thomas Hope")
     IDAPI.AppendString(fl, "* jzy08 - Jason Ye")
     IDAPI.AppendString(fl, "")
-    # p2
+    # p1
     hepC_mean = Mean(data)
     IDAPI.AppendString(fl, "The Mean vector of the HepatitisC data set:")
     IDAPI.AppendString(fl, "\n::\n")
     IDAPI.AppendList(fl, hepC_mean)
-    # p3
+    IDAPI.AppendString(fl, "")
+    # p2
     hepC_covar = Covariance(data)
     IDAPI.AppendString(fl, "The Covariance matrix of the HepatitisC data set:")
     IDAPI.AppendString(fl, "\n::\n")
     IDAPI.AppendArray(fl, hepC_covar)
-    # p4
+    IDAPI.AppendString(fl, "")
+    # p3
     basis = np.array(IDAPI.ReadEigenfaceBasis())
+    CreateEigenfaceFiles(basis)
+    IDAPI.AppendString(fl, "The Eigenface images of the Priciple Components:\n")
+    for i in range(len(basis)):
+        IDAPI.AppendString(fl, ''.join((".. image:: PrincipalComponent",
+                                        str(i), ".jpg\n   :scale: 50%\n")))
+    # p4
     mean_face = np.array(IDAPI.ReadOneImage("MeanImage.jpg"))
     face = np.array(IDAPI.ReadOneImage('c.pgm'))
     magnitudes = ProjectFace(basis, mean_face, face)
+    IDAPI.AppendString(fl, "The magnitudes of 'c.pgm' from given basis:")
+    IDAPI.AppendString(fl, "\n::\n")
+    IDAPI.AppendList(fl, magnitudes)
+    IDAPI.AppendString(fl, "")
+    # p5
     CreatePartialReconstructions(basis, mean_face, magnitudes)
-
+    IDAPI.AppendString(fl, "The Partial Reconstructions of image 'c.pgm':\n")
+    #IDAPI.AppendString(fl, ''.join((".. image:: PartialReconstruction",
+                                    #"Mean", ".jpg\n   :scale: 50%\n")))
+    for i in range(len(basis) + 1):
+        IDAPI.AppendString(fl, ''.join((".. image:: PartialReconstruction",
+                                        str(i), ".jpg\n   :scale: 50%\n")))
+    # p6
+    image_data = np.array(IDAPI.ReadImages())
+    new_basis = PrincipalComponents(image_data)
+    CreateEigenfaceFiles(new_basis, "NewPrincComp")
+    IDAPI.AppendString(fl, "The Eigenface images of the Priciple Components:\n")
+    for i in range(len(new_basis)):
+        IDAPI.AppendString(fl, ''.join((".. image:: NewPrincComp",
+                                        str(i), ".jpg\n   :scale: 50%\n")))
+    new_mean = Mean(image_data)
+    face = np.array(IDAPI.ReadOneImage('c.pgm'))
+    new_mags = ProjectFace(new_basis, new_mean, face)
+    IDAPI.AppendString(fl, "The magnitudes of 'c.pgm' from given basis:")
+    IDAPI.AppendString(fl, "\n::\n")
+    IDAPI.AppendList(fl, new_mags)
+    CreatePartialReconstructions(new_basis, new_mean, new_mags, "NewPartRecon")
+    IDAPI.AppendString(fl, "The Partial Reconstructions of image 'c.pgm':\n")
+    #IDAPI.AppendString(fl, ''.join((".. image:: NewPartRecon",
+                                    #"Mean", ".jpg\n   :scale: 50%\n")))
+    for i in range(len(new_basis) + 1):
+        IDAPI.AppendString(fl, ''.join((".. image:: NewPartRecon",
+                                        str(i), ".jpg\n   :scale: 50%\n")))
     # pn
-    IDAPI.AppendString(fl, "END")
+    #IDAPI.AppendString(fl, "END")
     ####
     #os.system('cat {0}'.format(fl))
-    #os.system("rst2latex.py {0}.rst {0}.tex".format(fl.rpartition('.')[0]))
-    #os.system("pdflatex {0}.tex".format(fl.rpartition('.')[0]))
-    #os.system("xdg-open {0}.pdf".format(fl.rpartition('.')[0]))
+    os.system("rst2latex.py {0}.rst {0}.tex".format(fl.rpartition('.')[0]))
+    os.system("pdflatex {0}.tex".format(fl.rpartition('.')[0]))
+    os.system("xdg-open {0}.pdf".format(fl.rpartition('.')[0]))
 
 
 #

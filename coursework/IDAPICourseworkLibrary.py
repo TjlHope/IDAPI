@@ -40,7 +40,7 @@ def AppendArray(filename, anArray):
     f = open(filename, 'a')
     for row in range(anArray.shape[0]):
         for col in range(anArray.shape[1]):
-            f.write('%6.3f ' % (anArray[row, col]))
+            f.write(' %6.3f' % (anArray[row, col]))
         f.write('\n')
     f.write('\n\n')
     f.close()
@@ -50,7 +50,7 @@ def AppendList(filename, aList):
     """Function to write a list to a results file."""
     f = open(filename, 'a')
     for row in range(aList.shape[0]):
-        f.write('%6.3f ' % (aList[row]))
+        f.write(' %6.3f' % (aList[row]))
     f.write('\n\n')
     f.close()
 
